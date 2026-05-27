@@ -208,9 +208,9 @@
 
         <!-- 按期数查找 -->
         <div class="card">
-            <h2>📖 按期数查找所有书</h2>
+            <h2>📖 查找往期书单</h2>
             <div class="input-group">
-                <input type="number" id="periodInput" placeholder="请输入期数 (如: 1, 2, 3...)" min="1">
+                <input type="number" id="periodInput" placeholder="请输入期数 (期数为正整数，范围从1到13)" min="1">
                 <button class="btn btn-primary" onclick="searchByPeriod()">🔍 查找</button>
             </div>
             <div id="periodResult" class="result-area">
@@ -220,26 +220,14 @@
 
         <!-- 按书名查找 -->
         <div class="card">
-            <h2>🔎 按书名查找</h2>
+            <h2>🔎 按书名查找是否在书单内</h2>
             <div class="input-group">
-                <input type="text" id="bookInput" placeholder="请输入书名 (如: 百年孤独, 神曲...)" autocomplete="off">
+                <input type="text" id="bookInput" placeholder="请输入书名 (不需要加书名号，支持模糊查找，如: 西施泪)" autocomplete="off">
                 <button class="btn btn-secondary" onclick="searchByBook()">🔍 查找</button>
             </div>
             <div id="bookResult" class="result-area">
                 <div class="empty-message">输入书名，点击查找</div>
             </div>
-        </div>
-
-        <!-- 数据状态显示 -->
-        <div class="card">
-            <h2>📊 数据统计</h2>
-            <div id="statsResult" class="result-area" style="min-height: auto;">
-                <div class="empty-message">正在加载数据...</div>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>数据来源：booklist.csv | 共 <span id="totalBooks">0</span> 本书，<span id="totalPeriods">0</span> 期</p>
         </div>
     </div>
 
@@ -542,43 +530,6 @@
             } else {
                 container.innerHTML = `<div class="empty-message">${message}</div>`;
             }
-        }
-
-        // 更新统计信息
-        function updateStats() {
-            const totalBooks = bookData.length;
-            const periods = new Set(bookData.map(book => book.period));
-            const totalPeriods = periods.size;
-            
-            document.getElementById('totalBooks').textContent = totalBooks;
-            document.getElementById('totalPeriods').textContent = totalPeriods;
-            
-            // 显示详细统计
-            const periodStats = {};
-            bookData.forEach(book => {
-                if (!periodStats[book.period]) {
-                    periodStats[book.period] = 0;
-                }
-                periodStats[book.period]++;
-            });
-            
-            let statsHtml = `
-                <div class="result-stats">📈 书单概览（共${totalPeriods}期 ${totalBooks}本书）</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px;">
-            `;
-            
-            const sortedPeriods = Object.keys(periodStats).sort((a,b) => a-b);
-            sortedPeriods.forEach(period => {
-                statsHtml += `
-                    <div style="background: white; padding: 8px 12px; border-radius: 8px; text-align: center;">
-                        <strong>第 ${period} 期</strong><br>
-                        <span style="color: #667eea; font-size: 20px; font-weight: bold;">${periodStats[period]}</span> 本
-                    </div>
-                `;
-            });
-            
-            statsHtml += `</div>`;
-            document.getElementById('statsResult').innerHTML = statsHtml;
         }
 
         // 防止 XSS 攻击
