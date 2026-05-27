@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
@@ -149,6 +149,7 @@
         .book-title {
             font-weight: 500;
             color: #2d3748;
+            word-break: break-all;
         }
 
         .book-period {
@@ -158,6 +159,7 @@
             border-radius: 20px;
             font-size: 14px;
             font-weight: 600;
+            white-space: nowrap;
         }
 
         .search-result {
@@ -181,27 +183,15 @@
             padding: 40px;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
+        .debug-info {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
             font-size: 12px;
-            font-weight: 600;
-        }
-
-        .status-success {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-
-        .status-error {
-            background: #fed7d7;
-            color: #742a2a;
-        }
-
-        .status-info {
-            background: #bee3f8;
-            color: #2c5282;
+            display: none;
         }
 
         .footer {
@@ -232,7 +222,7 @@
         <div class="card">
             <h2>🔎 按书名查找</h2>
             <div class="input-group">
-                <input type="text" id="bookInput" placeholder="请输入书名 (如: 神曲, 百年孤独...)" autocomplete="off">
+                <input type="text" id="bookInput" placeholder="请输入书名 (如: 百年孤独, 神曲...)" autocomplete="off">
                 <button class="btn btn-secondary" onclick="searchByBook()">🔍 查找</button>
             </div>
             <div id="bookResult" class="result-area">
@@ -255,7 +245,8 @@
 
     <script>
         // 存储所有书籍数据
-        let bookData = [];  // 每个元素: { period: 期数, name: 书名 }
+        let bookData = [];
+        let debugMode = true;
 
         // 页面加载时读取 CSV 数据
         window.addEventListener('DOMContentLoaded', () => {
@@ -265,61 +256,120 @@
         // 加载 CSV 文件
         async function loadCSVData() {
             try {
-                // 尝试从同目录加载 booklist.csv
+                // 尝试不同的编码方式加载
                 const response = await fetch('./booklist.csv');
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                const csvText = await response.text();
+                // 获取原始数据作为 ArrayBuffer
+                const arrayBuffer = await response.arrayBuffer();
+                
+                // 尝试 UTF-8 解码
+                let csvText = '';
+                try {
+                    // 使用 TextDecoder 尝试 UTF-8
+                    const utf8Decoder = new TextDecoder('utf-8');
+                    csvText = utf8Decoder.decode(arrayBuffer);
+                    
+                    // 检查是否有乱码（简单检测：如果出现 � 或大量非中文字符）
+                    if (csvText.includes('�') || (csvText.match(/[一-龥]/g) || []).length < 5) {
+                        // 尝试 GBK 编码
+                        const gbkDecoder = new TextDecoder('gbk');
+                        csvText = gbkDecoder.decode(arrayBuffer);
+                    }
+                } catch (e) {
+                    // 如果 TextDecoder 失败，使用传统方式
+                    csvText = await response.text();
+                }
+                
+                console.log('CSV 内容预览:', csvText.substring(0, 200));
                 parseCSV(csvText);
                 updateStats();
-                showMessage('periodResult', 'info', '✅ 数据加载成功！输入期数开始查询');
+                showMessage('periodResult', 'info', '✅ 数据加载成功！共 ' + bookData.length + ' 本书');
                 showMessage('bookResult', 'info', '✅ 数据加载成功！输入书名开始查询');
+                
+                // 测试搜索"百年孤独"
+                testSearch();
                 
             } catch (error) {
                 console.error('加载 CSV 文件失败:', error);
-                showMessage('periodResult', 'error', '❌ 无法加载 booklist.csv 文件。请确保文件存在于同目录下，格式为 UTF-8 编码。');
-                showMessage('bookResult', 'error', '❌ 无法加载 booklist.csv 文件。请确保文件存在且格式正确。');
+                showMessage('periodResult', 'error', '❌ 无法加载 booklist.csv 文件。请确保文件存在于同目录下，并使用 UTF-8 编码保存。');
+                showMessage('bookResult', 'error', '❌ 无法加载 booklist.csv 文件。');
                 showMessage('statsResult', 'error', '❌ 数据加载失败: ' + error.message);
             }
         }
 
         // 解析 CSV 内容
         function parseCSV(csvText) {
+            // 移除 BOM 头（如果存在）
+            if (csvText.charCodeAt(0) === 0xFEFF) {
+                csvText = csvText.substring(1);
+            }
+            
             // 按行分割
             const lines = csvText.split(/\r?\n/);
             
-            // 跳过第一行标题（期数,书名）
-            let startIndex = 0;
-            if (lines.length > 0 && (lines[0].includes('期数') || lines[0].includes('书名'))) {
-                startIndex = 1;
-            }
-            
             bookData = [];
             
-            for (let i = startIndex; i < lines.length; i++) {
+            for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (line === '') continue;
                 
-                // 解析 CSV（支持带逗号的内容，这里简单按逗号分割）
-                let parts = line.split(',');
+                // 跳过标题行（兼容多种标题格式）
+                if (i === 0 && (line.includes('期数') || line.includes('书名') || line.toLowerCase().includes('period'))) {
+                    console.log('跳过标题行:', line);
+                    continue;
+                }
+                
+                // 解析 CSV（支持带逗号的内容）
+                let parts = [];
+                let inQuotes = false;
+                let currentPart = '';
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        parts.push(currentPart.trim());
+                        currentPart = '';
+                    } else {
+                        currentPart += char;
+                    }
+                }
+                parts.push(currentPart.trim());
+                
                 if (parts.length >= 2) {
-                    const period = parseInt(parts[0].trim());
-                    const bookName = parts.slice(1).join(',').trim(); // 书名中可能包含逗号
+                    const period = parseInt(parts[0]);
+                    const bookName = parts.slice(1).join(',').trim().replace(/^"|"$/g, ''); // 移除可能的引号
                     
-                    if (!isNaN(period) && bookName) {
+                    if (!isNaN(period) && bookName && bookName !== '') {
                         bookData.push({
                             period: period,
                             name: bookName
                         });
+                        console.log(`解析成功: 第${period}期, 《${bookName}》`);
                     }
                 }
             }
             
             // 按期数排序
             bookData.sort((a, b) => a.period - b.period);
+            console.log(`共解析 ${bookData.length} 本书`);
+        }
+
+        // 测试搜索功能
+        function testSearch() {
+            const testBook = bookData.find(book => book.name.includes('百年孤独'));
+            if (testBook) {
+                console.log(`✅ 测试成功：找到"百年孤独"，在第 ${testBook.period} 期`);
+            } else {
+                console.warn('⚠️ 未找到"百年孤独"，请检查 CSV 文件中是否包含此书');
+                // 显示前10本书作为调试信息
+                console.log('前10本书:', bookData.slice(0, 10).map(b => b.name));
+            }
         }
 
         // 按期数查找所有书
@@ -349,10 +399,10 @@
             displayBookList('periodResult', filteredBooks, `📚 第 ${period} 期共 ${filteredBooks.length} 本书`);
         }
 
-        // 按书名查找
+        // 按书名查找（改进版，支持精确匹配和模糊匹配）
         function searchByBook() {
             const bookInput = document.getElementById('bookInput');
-            const bookName = bookInput.value.trim();
+            let bookName = bookInput.value.trim();
             
             if (bookName === '') {
                 showMessage('bookResult', 'error', '⚠️ 请输入书名');
@@ -364,25 +414,76 @@
                 return;
             }
             
-            // 精确匹配查找（不区分大小写，去除首尾空格）
-            const found = bookData.find(book => 
-                book.name.toLowerCase() === bookName.toLowerCase()
-            );
+            console.log(`搜索: "${bookName}"`);
+            
+            // 精确匹配（完全相等）
+            let found = bookData.find(book => book.name === bookName);
             
             if (found) {
-                showMessage('bookResult', 'found', `✅ 找到书籍！《${found.name}》 属于第 ${found.period} 期`, found.period);
+                showBookFoundResult(found, bookName, '精确');
+                return;
+            }
+            
+            // 精确匹配（忽略标点符号差异）
+            const normalizeName = (str) => {
+                return str.replace(/[，,、。！？；：""''《》【】（）]/g, '').replace(/\s/g, '');
+            };
+            
+            const normalizedSearch = normalizeName(bookName);
+            found = bookData.find(book => normalizeName(book.name) === normalizedSearch);
+            
+            if (found) {
+                showBookFoundResult(found, bookName, '（忽略标点）');
+                return;
+            }
+            
+            // 模糊匹配（包含关系）
+            const similar = bookData.filter(book => 
+                book.name.includes(bookName) || bookName.includes(book.name)
+            );
+            
+            if (similar.length === 1) {
+                // 只有一个相似结果，直接显示
+                showBookFoundResult(similar[0], bookName, '（相似匹配）');
+            } else if (similar.length > 1) {
+                // 多个相似结果
+                showMessage('bookResult', 'similar', `🔍 找到 ${similar.length} 本相似书籍：`, null, similar);
             } else {
-                // 尝试模糊匹配（包含关键词）
-                const similar = bookData.filter(book => 
-                    book.name.toLowerCase().includes(bookName.toLowerCase())
+                // 尝试关键词匹配（分词）
+                const keywords = bookName.split(/[\s,，、]/).filter(k => k.length > 0);
+                const keywordMatches = bookData.filter(book => 
+                    keywords.some(keyword => book.name.includes(keyword))
                 );
                 
-                if (similar.length > 0) {
-                    showMessage('bookResult', 'similar', `❓ 未找到《${bookName}》，但找到以下相似书籍：`, null, similar);
+                if (keywordMatches.length > 0) {
+                    showMessage('bookResult', 'similar', `💡 未找到《${bookName}》，但找到包含相关关键词的书籍：`, null, keywordMatches);
                 } else {
                     showMessage('bookResult', 'notfound', `❌ 未找到《${bookName}》，该书不在当前书单中`);
                 }
             }
+        }
+        
+        // 显示找到的书籍结果
+        function showBookFoundResult(book, searchName, matchType) {
+            const container = document.getElementById('bookResult');
+            container.innerHTML = `
+                <div class="search-result">
+                    <div class="found">
+                        ✅ 找到书籍！
+                    </div>
+                    <div style="margin-top: 20px; padding: 20px; background: #e6fffa; border-radius: 12px;">
+                        <div style="font-size: 16px; color: #234e52; margin-bottom: 15px;">
+                            ${matchType}
+                        </div>
+                        <div style="font-size: 18px; margin-bottom: 10px;">
+                            📖 书名：<strong style="color: #2c7a7b;">《${escapeHtml(book.name)}》</strong>
+                        </div>
+                        <div style="font-size: 18px;">
+                            🔢 期数：<span style="font-size: 24px; font-weight: bold; color: #2c7a7b;">第 ${book.period} 期</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         // 显示书籍列表
@@ -407,29 +508,19 @@
             container.innerHTML = html;
         }
 
-        // 显示消息（用于查找结果）
+        // 显示消息
         function showMessage(elementId, type, message, period = null, similarBooks = null) {
             const container = document.getElementById(elementId);
             
             if (type === 'found') {
-                container.innerHTML = `
-                    <div class="search-result">
-                        <div class="found">
-                            ${message}
-                        </div>
-                        <div style="margin-top: 20px; padding: 15px; background: #e6fffa; border-radius: 8px;">
-                            <strong style="color: #234e52;">📌 详细信息</strong><br>
-                            书名：${message.match(/《([^》]+)》/)?.[1] || ''}<br>
-                            期数：<span style="font-size: 20px; font-weight: bold; color: #2c7a7b;">第 ${period} 期</span>
-                        </div>
-                    </div>
-                `;
+                // 已由 showBookFoundResult 处理
+                return;
             } else if (type === 'similar' && similarBooks) {
                 let similarHtml = `
                     <div class="result-stats">${message}</div>
                     <div class="book-list">
                 `;
-                similarBooks.forEach(book => {
+                similarBooks.slice(0, 20).forEach(book => {
                     similarHtml += `
                         <div class="book-item">
                             <span class="book-title">《${escapeHtml(book.name)}》</span>
@@ -437,6 +528,9 @@
                         </div>
                     `;
                 });
+                if (similarBooks.length > 20) {
+                    similarHtml += `<div style="text-align: center; padding: 10px; color: #666;">... 还有 ${similarBooks.length - 20} 本书</div>`;
+                }
                 similarHtml += `</div>`;
                 container.innerHTML = similarHtml;
             } else if (type === 'info') {
@@ -469,8 +563,8 @@
             });
             
             let statsHtml = `
-                <div class="result-stats">📈 书单概览</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">
+                <div class="result-stats">📈 书单概览（共${totalPeriods}期 ${totalBooks}本书）</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px;">
             `;
             
             const sortedPeriods = Object.keys(periodStats).sort((a,b) => a-b);
@@ -478,7 +572,7 @@
                 statsHtml += `
                     <div style="background: white; padding: 8px 12px; border-radius: 8px; text-align: center;">
                         <strong>第 ${period} 期</strong><br>
-                        <span style="color: #667eea; font-size: 20px; font-weight: bold;">${periodStats[period]}</span> 本书
+                        <span style="color: #667eea; font-size: 20px; font-weight: bold;">${periodStats[period]}</span> 本
                     </div>
                 `;
             });
