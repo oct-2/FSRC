@@ -218,7 +218,7 @@
         <div class="card">
             <h2>📖 查找往期书单</h2>
             <div class="input-group">
-                <input type="number" id="periodInput" placeholder="请输入期数 (期数为正整数，范围为1-13)" min="1">
+                <input type="number" id="periodInput" placeholder="请输入期数 (范围为1-14)" min="1">
                 <button class="btn btn-primary" onclick="searchByPeriod()">🔍 查找</button>
             </div>
             <div id="periodResult" class="result-area">
@@ -230,7 +230,7 @@
         <div class="card">
             <h2>🔎 按书名查找是否在书单中</h2>
             <div class="input-group">
-                <input type="text" id="bookInput" placeholder="请输入书名 (不需要输入书名号，支持模糊查找，如:西施泪)" autocomplete="off">
+                <input type="text" id="bookInput" placeholder="请输入书名 (不需要书名号，支持模糊查找)" autocomplete="off">
                 <button class="btn btn-secondary" onclick="searchByBook()">🔍 查找</button>
             </div>
             <div id="bookResult" class="result-area">
