@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>书单查询系统</title>
+    <title>四季读书组</title>
     <style>
         * {
             margin: 0;
@@ -12,182 +12,201 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans SC', sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            padding: 40px 20px;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
         h1 {
             text-align: center;
-            color: white;
-            margin-bottom: 30px;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #5a6e7c;
+            margin-bottom: 32px;
+            letter-spacing: 1px;
         }
 
         .card {
             background: white;
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+            border: 1px solid #eef2f4;
         }
 
         .card h2 {
-            color: #667eea;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #5a6e7c;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card h2::before {
-            content: '';
-            width: 4px;
-            height: 24px;
-            background: #667eea;
-            border-radius: 2px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eef2f4;
         }
 
         .input-group {
             display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
         .input-group input {
             flex: 1;
-            padding: 12px 16px;
-            font-size: 16px;
-            border: 2px solid #e0e0e0;
+            padding: 10px 14px;
+            font-size: 15px;
+            border: 1px solid #d9e0e4;
             border-radius: 8px;
-            transition: all 0.3s;
+            background: white;
+            transition: all 0.2s ease;
+            font-family: inherit;
         }
 
         .input-group input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+            border-color: #b0c4ce;
+            box-shadow: 0 0 0 3px rgba(176, 196, 206, 0.2);
+        }
+
+        .input-group input::placeholder {
+            color: #b8c5cd;
+            font-weight: 400;
         }
 
         .btn {
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
+            font-family: inherit;
         }
 
         .btn-primary {
-            background: #667eea;
-            color: white;
+            background: #eef2f4;
+            color: #5a6e7c;
         }
 
         .btn-primary:hover {
-            background: #5a67d8;
-            transform: translateY(-2px);
+            background: #e4e9ec;
         }
 
         .btn-secondary {
-            background: #48bb78;
-            color: white;
+            background: #eef2f4;
+            color: #5a6e7c;
         }
 
         .btn-secondary:hover {
-            background: #38a169;
-            transform: translateY(-2px);
+            background: #e4e9ec;
         }
 
         .result-area {
-            background: #f7f7fc;
-            border-radius: 12px;
+            background: #fafcfc;
+            border-radius: 10px;
             padding: 20px;
-            min-height: 200px;
-            max-height: 400px;
+            margin-top: 20px;
+            min-height: 180px;
+            max-height: 360px;
             overflow-y: auto;
+            border: 1px solid #eef2f4;
         }
 
         .result-stats {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 15px;
+            font-size: 13px;
+            color: #8da0ab;
+            margin-bottom: 14px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #eef2f4;
         }
 
         .book-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
 
         .book-item {
             background: white;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #eef2f4;
             transition: all 0.2s;
         }
 
         .book-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: #fafcfc;
+            border-color: #dfe6ea;
         }
 
         .book-title {
-            font-weight: 500;
-            color: #2d3748;
-            word-break: break-all;
+            font-size: 14px;
+            color: #4a6272;
+            font-weight: 450;
         }
 
         .book-period {
-            background: #667eea;
-            color: white;
-            padding: 4px 12px;
+            background: #eef2f4;
+            color: #7b98aa;
+            padding: 2px 10px;
             border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
+            font-size: 12px;
+            font-weight: 500;
         }
 
         .search-result {
             text-align: center;
-            padding: 40px;
+            padding: 32px 20px;
         }
 
         .found {
-            color: #48bb78;
-            font-size: 18px;
-        }
-
-        .not-found {
-            color: #e53e3e;
-            font-size: 18px;
+            color: #7ba58b;
+            font-size: 16px;
+            font-weight: 500;
         }
 
         .empty-message {
             text-align: center;
-            color: #a0aec0;
-            padding: 40px;
+            color: #b8c5cd;
+            padding: 40px 20px;
+            font-size: 14px;
         }
 
         .footer {
             text-align: center;
-            color: rgba(255,255,255,0.8);
-            margin-top: 30px;
-            font-size: 14px;
+            color: #b8c5cd;
+            margin-top: 32px;
+            font-size: 12px;
+            border-top: 1px solid #eef2f4;
+            padding-top: 24px;
+        }
+
+        /* 自定义滚动条 */
+        .result-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .result-area::-webkit-scrollbar-track {
+            background: #eef2f4;
+            border-radius: 4px;
+        }
+
+        .result-area::-webkit-scrollbar-thumb {
+            background: #cfdce2;
+            border-radius: 4px;
+        }
+
+        .result-area::-webkit-scrollbar-thumb:hover {
+            background: #b8c5cd;
         }
     </style>
 </head>
@@ -197,9 +216,9 @@
 
         <!-- 按期数查找 -->
         <div class="card">
-            <h2>📖 按期数查找所有书</h2>
+            <h2>📖 查找往期书单</h2>
             <div class="input-group">
-                <input type="number" id="periodInput" placeholder="请输入期数 (如: 1, 2, 3...)" min="1">
+                <input type="number" id="periodInput" placeholder="请输入期数 (期数为正整数，范围为1-13)" min="1">
                 <button class="btn btn-primary" onclick="searchByPeriod()">🔍 查找</button>
             </div>
             <div id="periodResult" class="result-area">
@@ -209,9 +228,9 @@
 
         <!-- 按书名查找 -->
         <div class="card">
-            <h2>🔎 按书名查找</h2>
+            <h2>🔎 按书名查找是否在书单中</h2>
             <div class="input-group">
-                <input type="text" id="bookInput" placeholder="请输入书名 (如: 百年孤独, 神曲...)" autocomplete="off">
+                <input type="text" id="bookInput" placeholder="请输入书名 (不需要输入书名号，支持模糊查找，如:西施泪)" autocomplete="off">
                 <button class="btn btn-secondary" onclick="searchByBook()">🔍 查找</button>
             </div>
             <div id="bookResult" class="result-area">
